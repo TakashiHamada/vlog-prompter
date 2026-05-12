@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>V-Log プロンプター</title>
+<style>
+  /* ===== 全体リセット ===== */
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 100%; height: 100%; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", "Meiryo", sans-serif; }
+  body { background: #0e0e10; color: #fff; }
+
+  /* ===== エディタモード（初期画面）===== */
+  #editor {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 32px;
+    background: linear-gradient(135deg, #1a1a1f 0%, #0e0e10 100%);
+  }
+  #editor h1 {
+    font-size: 28px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    letter-spacing: 0.05em;
+  }
+  #editor p.desc {
+    font-size: 14px;
+    color: #9aa0a6;
+    margin-bottom: 24px;
+  }
+  #scriptInput {
+    width: min(900px, 100%);
+    height: 60vh;
+    background: #18181c;
+    color: #fff;
+    border: 1px solid #2a2a30;
+    border-radius: 12px;
+    padding: 20px;
+    font-size: 16px;
+    line-height: 1.7;
+    resize: none;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  #scriptInput:focus { border-color: #4a90ff; }
+  #startBtn {
+    margin-top: 20px;
+    background: #4a90ff;
+    color: #fff;
+    border: none;
+    padding: 14px 36px;
+    font-size: 16px;
+    font-weight: 600;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+    letter-spacing: 0.05em;
+  }
+  #startBtn:hover { background: #5fa0ff; }
+  #startBtn:active { transform: scale(0.98); }
+  #startBtn:disabled { background: #333; color: #777; cursor: not-allowed; }
+
+  /* ===== プレゼンテーションモード ===== */
+  #presenter {
+    display: none;
+    width: 100%;
+    height: 100%;
+    background: #000;
+    color: #fff;
+    position: relative;
+    user-select: none;
+    cursor: pointer;
+  }
+  #presenter.active { display: flex; }
+
+  /* 左エリア（ナビゲーター）: 比率 1 */
+  #navigator {
+    flex: 1;
+    height: 100%;
+    overflow-y: auto;
+    padding: 40px 20px;
+    font-size: 14px;
+    line-height: 1.8;
+    color: #555;
+    border-right: 1px solid #1a1a1a;
+    scroll-behavior: smooth;
+  }
+  /* スクロールバーを目立たなくする */
+  #navigator::-webkit-scrollbar { width: 6px; }
+  #navigator::-webkit-scrollbar-track { background: transparent; }
+  #navigator::-webkit-scrollbar-thumb { background: #222; border-radius: 3px; }
+
+  .nav-page {
+    padding: 12px 14px;
+    margin-bottom: 10px;
+    border-radius: 6px;
+    white-space: pre-wrap;
+    word-break: break-word;
+    transition: background 0.25s, color 0.25s;
+  }
+  .nav-page.current {
+    background: #1f5fd6;
+    color: #fff;
+    font-weight: 500;
+  }
+
+  /* 右エリア（メイン表示）: 比率 5 */
+  #mainDisplay {
+    flex: 5;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 60px;
+    overflow: hidden;
+  }
+  #mainText {
+    width: 100%;
+    max-height: 100%;
+    overflow: hidden;
+    font-size: 72px;
+    font-weight: 600;
+    line-height: 1.6;
+    text-align: center;
+    white-space: pre-wrap;
+    word-break: break-word;
+    letter-spacing: 0.03em;
+  }
+
+  /* ===== 設定オーバーレイ（ホバー時のみ表示）===== */
+  #controls {
+    position: absolute;
+    bottom: 24px;
+    right: 24px;
+    background: rgba(20, 20, 24, 0.85);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+    z-index: 10;
+  }
+  #presenter:hover #controls {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  #controls label {
+    font-size: 12px;
+    color: #9aa0a6;
+    white-space: nowrap;
+  }
+  #fontSlider {
+    width: 160px;
+    accent-color: #4a90ff;
+    cursor: pointer;
+  }
+  #fontValue {
+    font-size: 12px;
+    color: #fff;
+    min-width: 38px;
+    text-align: right;
+  }
+  #exitBtn {
+    background: transparent;
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.2);
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  #exitBtn:hover { background: rgba(255,255,255,0.1); }
+
+  /* ページ番号インジケータ（ホバー時のみ）*/
+  #pageIndicator {
+    position: absolute;
+    top: 24px;
+    right: 24px;
+    background: rgba(20, 20, 24, 0.85);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-size: 12px;
+    color: #9aa0a6;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+    z-index: 10;
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+  #presenter:hover #pageIndicator { opacity: 1; }
+
+  /* 操作ヒント（最初の数秒だけ表示）*/
+  #hint {
+    position: absolute;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 12px;
+    color: #555;
+    opacity: 0;
+    transition: opacity 0.4s;
+    pointer-events: none;
+    z-index: 10;
+  }
+  #presenter:hover #hint { opacity: 1; }
+</style>
+</head>
+<body>
+
+<!-- ===== エディタモード ===== -->
+<div id="editor">
+  <h1>V-Log プロンプター</h1>
+  <p class="desc">原稿を貼り付けてください。空行（Enter 2回）でページが区切られます。</p>
+  <textarea id="scriptInput" placeholder="ここに原稿を貼り付け…&#10;&#10;空行で次のページに区切られます。"></textarea>
+  <button id="startBtn">プロンプター開始</button>
+</div>
+
+<!-- ===== プレゼンテーションモード ===== -->
+<div id="presenter">
+  <!-- 左：全文ナビゲーター -->
+  <div id="navigator"></div>
+
+  <!-- 右：メイン表示 -->
+  <div id="mainDisplay">
+    <div id="mainText"></div>
+  </div>
+
+  <!-- ページ番号 -->
+  <div id="pageIndicator">1 / 1</div>
+
+  <!-- 設定コントロール -->
+  <div id="controls">
+    <label for="fontSlider">文字サイズ</label>
+    <input type="range" id="fontSlider" min="24" max="160" value="72" step="2">
+    <span id="fontValue">72px</span>
+    <button id="exitBtn">終了</button>
+  </div>
+
+  <!-- 操作ヒント -->
+  <div id="hint">左クリック: 次へ ／ 右クリック: 前へ</div>
+</div>
+
+<script>
+  // ===== 要素参照 =====
+  const editor = document.getElementById('editor');
+  const presenter = document.getElementById('presenter');
+  const scriptInput = document.getElementById('scriptInput');
+  const startBtn = document.getElementById('startBtn');
+  const navigator_ = document.getElementById('navigator');
+  const mainText = document.getElementById('mainText');
+  const fontSlider = document.getElementById('fontSlider');
+  const fontValue = document.getElementById('fontValue');
+  const exitBtn = document.getElementById('exitBtn');
+  const pageIndicator = document.getElementById('pageIndicator');
+
+  // ===== 状態 =====
+  let pages = [];        // ページ配列
+  let currentIndex = 0;  // 現在のページ番号
+
+  // ===== 原稿をページに分割（空行＝改行2回で区切る）=====
+  function splitIntoPages(text) {
+    // 改行コードを統一して、2回以上の連続改行で分割
+    return text
+      .replace(/\r\n/g, '\n')
+      .split(/\n\s*\n+/)
+      .map(s => s.trim())
+      .filter(s => s.length > 0);
+  }
+
+  // ===== ナビゲーター（左側全文）を構築 =====
+  function buildNavigator() {
+    navigator_.innerHTML = '';
+    pages.forEach((page, i) => {
+      const div = document.createElement('div');
+      div.className = 'nav-page';
+      div.textContent = page;
+      div.dataset.index = i;
+      navigator_.appendChild(div);
+    });
+  }
+
+  // ===== 現在のページを表示し、ハイライト＆中央スクロールさせる =====
+  function showPage(index) {
+    if (pages.length === 0) return;
+    // 範囲をクランプ
+    currentIndex = Math.max(0, Math.min(index, pages.length - 1));
+
+    // 右側メイン表示
+    mainText.textContent = pages[currentIndex];
+
+    // ページ番号表示
+    pageIndicator.textContent = `${currentIndex + 1} / ${pages.length}`;
+
+    // 左側ハイライト更新
+    const items = navigator_.querySelectorAll('.nav-page');
+    items.forEach((el, i) => {
+      el.classList.toggle('current', i === currentIndex);
+    });
+
+    // ハイライト箇所が画面中央に来るよう自動スクロール
+    const currentEl = items[currentIndex];
+    if (currentEl) {
+      const navRect = navigator_.getBoundingClientRect();
+      const elRect = currentEl.getBoundingClientRect();
+      // 要素の中央位置 − ナビゲーター中央位置 をスクロール量に
+      const offset = (elRect.top + elRect.height / 2) - (navRect.top + navRect.height / 2);
+      navigator_.scrollTo({
+        top: navigator_.scrollTop + offset,
+        behavior: 'smooth'
+      });
+    }
+  }
+
+  // ===== プロンプター開始 =====
+  startBtn.addEventListener('click', () => {
+    const text = scriptInput.value;
+    pages = splitIntoPages(text);
+    if (pages.length === 0) {
+      alert('原稿が空です。テキストを入力してください。');
+      return;
+    }
+    currentIndex = 0;
+    buildNavigator();
+    editor.style.display = 'none';
+    presenter.classList.add('active');
+    showPage(0);
+  });
+
+  // ===== 終了ボタン =====
+  exitBtn.addEventListener('click', (e) => {
+    e.stopPropagation(); // クリックがページ送りに伝播しないように
+    presenter.classList.remove('active');
+    editor.style.display = 'flex';
+  });
+
+  // ===== マウス操作：左クリックで次へ =====
+  presenter.addEventListener('click', (e) => {
+    // コントロール領域のクリックはページ送りしない
+    if (e.target.closest('#controls') || e.target.closest('#pageIndicator')) return;
+    showPage(currentIndex + 1);
+  });
+
+  // ===== 右クリックで前へ（コンテキストメニュー抑制）=====
+  presenter.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    if (e.target.closest('#controls')) return;
+    showPage(currentIndex - 1);
+  });
+
+  // エディタ側でも右クリックメニューを使うかもしれないので、プレゼンター側のみ抑制
+
+  // ===== フォントサイズスライダー =====
+  fontSlider.addEventListener('input', () => {
+    const size = fontSlider.value;
+    mainText.style.fontSize = size + 'px';
+    fontValue.textContent = size + 'px';
+  });
+
+  // スライダー操作中にクリックでページ送りされないように
+  ['mousedown', 'click'].forEach(ev => {
+    fontSlider.addEventListener(ev, e => e.stopPropagation());
+  });
+
+  // ===== キーボードショートカット（補助）=====
+  document.addEventListener('keydown', (e) => {
+    if (!presenter.classList.contains('active')) return;
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+      e.preventDefault();
+      showPage(currentIndex + 1);
+    } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+      e.preventDefault();
+      showPage(currentIndex - 1);
+    } else if (e.key === 'Escape') {
+      presenter.classList.remove('active');
+      editor.style.display = 'flex';
+    }
+  });
+
+  // ===== サンプル原稿（初回ヒント用）=====
+  scriptInput.value =
+    'こんにちは、今日のV-Logへようこそ。\n今日は新しいカメラで撮影しています。\n\n' +
+    '最初に紹介したいのは、このプロンプターアプリです。\n空行でページが切り替わります。\n\n' +
+    '左クリックで次のページ、右クリックで前のページに戻れます。\n撮影に集中できるシンプルな設計です。\n\n' +
+    '画面右下にマウスを移動すると、文字サイズを調整するスライダーが表示されます。\n\n' +
+    'それでは、素敵な撮影を！';
+</script>
+</body>
+</html>
