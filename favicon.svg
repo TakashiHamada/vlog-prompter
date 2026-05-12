@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- 背景：プロンプター画面をイメージした黒い角丸スクリーン -->
+  <rect width="64" height="64" rx="12" fill="#0e0e10"/>
+  <!-- 左側のナビゲーター帯（1:5 構成のミニチュア表現） -->
+  <rect x="6" y="10" width="10" height="44" rx="2" fill="#1a1a1f"/>
+  <rect x="8" y="26" width="6" height="4" rx="1" fill="#4a90ff"/>
+  <!-- メイン表示エリアのテキスト行 -->
+  <rect x="22" y="18" width="34" height="6" rx="2" fill="#ffffff"/>
+  <rect x="22" y="29" width="28" height="6" rx="2" fill="#ffffff"/>
+  <rect x="22" y="40" width="32" height="6" rx="2" fill="#ffffff"/>
+</svg>
