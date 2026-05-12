@@ -108,6 +108,10 @@
     background: var(--bg-nav-hover);
     color: #aaa;
   }
+  .nav-page:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
   .nav-page.current {
     background: var(--accent-deep);
     color: var(--text-primary);
@@ -140,8 +144,13 @@
   }
   #presenter:hover .fade,
   #presenter:focus-within .fade { opacity: 1; }
+  /* 表示中はクリックを受け取れるようにする（透過させない）。
+     #pageIndicator も対象にしないとクリックが背後の presenter に抜けて
+     ページ送りが発火してしまう。 */
   #presenter:hover #controls,
-  #presenter:focus-within #controls { pointer-events: auto; }
+  #presenter:focus-within #controls,
+  #presenter:hover #pageIndicator,
+  #presenter:focus-within #pageIndicator { pointer-events: auto; }
   .glass {
     background: var(--glass-bg);
     backdrop-filter: blur(10px);
@@ -284,6 +293,8 @@
         .filter((s) => s.length > 0);
 
   // ===== ナビゲーター構築 =====
+  // 各ページ項目はキーボードでも操作できるよう button ロール + tabindex を付与し、
+  // Enter/Space で showPage を発火させる。現在ページは aria-current で表現。
   function buildNavigator() {
     const frag = document.createDocumentFragment();
     state.pages.forEach((page, i) => {
@@ -291,9 +302,19 @@
       div.className = 'nav-page';
       div.textContent = page;
       div.dataset.index = i;
+      div.tabIndex = 0;
+      div.setAttribute('role', 'button');
+      div.setAttribute('aria-label', `ページ ${i + 1} へ移動`);
       div.addEventListener('click', (e) => {
         e.stopPropagation();
         showPage(i);
+      });
+      div.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          e.stopPropagation();
+          showPage(i);
+        }
       });
       div.addEventListener('contextmenu', (e) => {
         e.preventDefault();
@@ -364,7 +385,13 @@
   // 左ナビのハイライト更新＋中央スクロール
   function updateNavHighlight() {
     const items = dom.navList.querySelectorAll('.nav-page');
-    items.forEach((el, i) => el.classList.toggle('current', i === state.currentIndex));
+    items.forEach((el, i) => {
+      const isCurrent = i === state.currentIndex;
+      el.classList.toggle('current', isCurrent);
+      // 支援技術向け：現在のページであることを伝える
+      if (isCurrent) el.setAttribute('aria-current', 'true');
+      else el.removeAttribute('aria-current');
+    });
 
     const currentEl = items[state.currentIndex];
     if (!currentEl) return;
