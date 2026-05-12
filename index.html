@@ -6,230 +6,192 @@
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <title>V-Log プロンプター</title>
 <style>
+  /* ===== テーマ変数 ===== */
+  :root {
+    --bg-app: #0e0e10;
+    --bg-editor-end: #1a1a1f;
+    --bg-stage: #000;
+    --bg-input: #18181c;
+    --bg-nav-hover: #1a1a1a;
+    --border-subtle: #2a2a30;
+    --border-stage: #1a1a1a;
+    --text-primary: #ffffff;
+    --text-muted: #9aa0a6;
+    --text-dim: #555;
+    --accent: #4a90ff;
+    --accent-hover: #5fa0ff;
+    --accent-deep: #1f5fd6;
+    --warn: #ffb84a;
+    --glass-bg: rgba(20, 20, 24, 0.85);
+    --glass-border: rgba(255, 255, 255, 0.08);
+    --font-stack: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", "Meiryo", sans-serif;
+  }
+
   /* ===== 全体リセット ===== */
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body { width: 100%; height: 100%; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", "Meiryo", sans-serif; }
-  body { background: #0e0e10; color: #fff; }
+  html, body {
+    width: 100%; height: 100%;
+    overflow: hidden;
+    font-family: var(--font-stack);
+  }
+  body { background: var(--bg-app); color: var(--text-primary); }
 
-  /* ===== エディタモード（初期画面）===== */
+  /* ===== エディタモード ===== */
   #editor {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
+    width: 100%; height: 100%;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
     padding: 32px;
-    background: linear-gradient(135deg, #1a1a1f 0%, #0e0e10 100%);
+    background: linear-gradient(135deg, var(--bg-editor-end) 0%, var(--bg-app) 100%);
   }
   #editor h1 {
-    font-size: 28px;
-    font-weight: 600;
-    margin-bottom: 8px;
-    letter-spacing: 0.05em;
+    font-size: 28px; font-weight: 600;
+    margin-bottom: 8px; letter-spacing: 0.05em;
   }
   #editor p.desc {
-    font-size: 14px;
-    color: #9aa0a6;
+    font-size: 14px; color: var(--text-muted);
     margin-bottom: 24px;
   }
   #scriptInput {
-    width: min(900px, 100%);
-    height: 60vh;
-    background: #18181c;
-    color: #fff;
-    border: 1px solid #2a2a30;
-    border-radius: 12px;
-    padding: 20px;
-    font-size: 16px;
-    line-height: 1.7;
-    resize: none;
-    outline: none;
+    width: min(900px, 100%); height: 60vh;
+    background: var(--bg-input); color: var(--text-primary);
+    border: 1px solid var(--border-subtle); border-radius: 12px;
+    padding: 20px; font-size: 16px; line-height: 1.7;
+    resize: none; outline: none;
     transition: border-color 0.2s;
   }
-  #scriptInput:focus { border-color: #4a90ff; }
+  #scriptInput:focus { border-color: var(--accent); }
   #startBtn {
     margin-top: 20px;
-    background: #4a90ff;
-    color: #fff;
-    border: none;
-    padding: 14px 36px;
-    font-size: 16px;
-    font-weight: 600;
-    border-radius: 999px;
-    cursor: pointer;
-    transition: background 0.2s, transform 0.1s;
+    background: var(--accent); color: var(--text-primary);
+    border: none; padding: 14px 36px;
+    font-size: 16px; font-weight: 600;
+    border-radius: 999px; cursor: pointer;
     letter-spacing: 0.05em;
+    transition: background 0.2s, transform 0.1s;
   }
-  #startBtn:hover { background: #5fa0ff; }
+  #startBtn:hover { background: var(--accent-hover); }
   #startBtn:active { transform: scale(0.98); }
-  #startBtn:disabled { background: #333; color: #777; cursor: not-allowed; }
 
   /* ===== プレゼンテーションモード ===== */
   #presenter {
     display: none;
-    width: 100%;
-    height: 100%;
-    background: #000;
-    color: #fff;
+    width: 100%; height: 100%;
+    background: var(--bg-stage); color: var(--text-primary);
     position: relative;
-    user-select: none;
-    cursor: pointer;
+    user-select: none; cursor: pointer;
   }
   #presenter.active { display: flex; }
 
-  /* 左エリア（ナビゲーター）: 比率 1 */
-  #navigator {
-    flex: 1;
-    height: 100%;
+  /* 左：ナビゲーター（比率 1） */
+  #navList {
+    flex: 1; height: 100%;
     overflow-y: auto;
     padding: 40px 20px;
-    font-size: 14px;
-    line-height: 1.8;
-    color: #555;
-    border-right: 1px solid #1a1a1a;
+    font-size: 14px; line-height: 1.8;
+    color: var(--text-dim);
+    border-right: 1px solid var(--border-stage);
     scroll-behavior: smooth;
   }
-  /* スクロールバーを目立たなくする */
-  #navigator::-webkit-scrollbar { width: 6px; }
-  #navigator::-webkit-scrollbar-track { background: transparent; }
-  #navigator::-webkit-scrollbar-thumb { background: #222; border-radius: 3px; }
+  #navList::-webkit-scrollbar { width: 6px; }
+  #navList::-webkit-scrollbar-track { background: transparent; }
+  #navList::-webkit-scrollbar-thumb { background: #222; border-radius: 3px; }
 
   .nav-page {
-    padding: 12px 14px;
-    margin-bottom: 10px;
+    padding: 12px 14px; margin-bottom: 10px;
     border-radius: 6px;
-    white-space: pre-wrap;
-    word-break: break-word;
-    transition: background 0.25s, color 0.25s;
+    white-space: pre-wrap; word-break: break-word;
     cursor: pointer;
+    transition: background 0.25s, color 0.25s;
   }
   .nav-page:hover:not(.current) {
-    background: #1a1a1a;
+    background: var(--bg-nav-hover);
     color: #aaa;
   }
   .nav-page.current {
-    background: #1f5fd6;
-    color: #fff;
+    background: var(--accent-deep);
+    color: var(--text-primary);
     font-weight: 500;
   }
 
-  /* 右エリア（メイン表示）: 比率 5 */
+  /* 右：メイン表示（比率 5） */
   #mainDisplay {
-    flex: 5;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    flex: 5; height: 100%;
+    display: flex; align-items: center; justify-content: center;
     padding: 60px;
     overflow: hidden;
   }
   #mainText {
-    width: 100%;
-    max-height: 100%;
+    width: 100%; max-height: 100%;
     overflow: hidden;
-    font-size: 72px;
-    font-weight: 600;
-    line-height: 1.6;
+    font-size: 72px; font-weight: 600;
+    line-height: 1.6; letter-spacing: 0.03em;
     text-align: center;
-    white-space: pre-wrap;
-    word-break: break-word;
-    letter-spacing: 0.03em;
+    white-space: pre-wrap; word-break: break-word;
   }
 
-  /* ===== 設定オーバーレイ（ホバー時のみ表示）===== */
-  #controls {
+  /* ===== ホバー時に現れるオーバーレイ ===== */
+  /* fade: 透明度のみ制御。glass: ガラス調背景＋枠。両者を組み合わせて使う */
+  .fade {
     position: absolute;
-    bottom: 24px;
-    right: 24px;
-    background: rgba(20, 20, 24, 0.85);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 12px;
-    padding: 14px 18px;
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    opacity: 0;
+    opacity: 0; pointer-events: none;
     transition: opacity 0.3s;
-    pointer-events: none;
     z-index: 10;
   }
-  #presenter:hover #controls {
-    opacity: 1;
-    pointer-events: auto;
+  #presenter:hover .fade { opacity: 1; }
+  #presenter:hover #controls { pointer-events: auto; }
+  .glass {
+    background: var(--glass-bg);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid var(--glass-border);
+  }
+
+  #controls {
+    bottom: 24px; right: 24px;
+    border-radius: 12px;
+    padding: 14px 18px;
+    display: flex; align-items: center; gap: 14px;
   }
   #controls label {
-    font-size: 12px;
-    color: #9aa0a6;
+    font-size: 12px; color: var(--text-muted);
     white-space: nowrap;
-  }
-  #fontSlider {
-    width: 160px;
-    accent-color: #4a90ff;
-    cursor: pointer;
-  }
-  #fontSlider:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
   }
   #controls.auto-fit label[for="fontSlider"]::after {
     content: ' (自動調整中)';
-    color: #ffb84a;
+    color: var(--warn);
   }
+  #fontSlider {
+    width: 160px;
+    accent-color: var(--accent);
+    cursor: pointer;
+  }
+  #fontSlider:disabled { opacity: 0.4; cursor: not-allowed; }
   #fontValue {
-    font-size: 12px;
-    color: #fff;
-    min-width: 38px;
-    text-align: right;
+    font-size: 12px; color: var(--text-primary);
+    min-width: 38px; text-align: right;
   }
   #exitBtn {
-    background: transparent;
-    color: #fff;
-    border: 1px solid rgba(255,255,255,0.2);
-    padding: 6px 12px;
-    border-radius: 6px;
-    font-size: 12px;
-    cursor: pointer;
+    background: transparent; color: var(--text-primary);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 6px 12px; border-radius: 6px;
+    font-size: 12px; cursor: pointer;
     transition: background 0.2s;
   }
-  #exitBtn:hover { background: rgba(255,255,255,0.1); }
+  #exitBtn:hover { background: rgba(255, 255, 255, 0.1); }
 
-  /* ページ番号インジケータ（ホバー時のみ）*/
   #pageIndicator {
-    position: absolute;
-    top: 24px;
-    right: 24px;
-    background: rgba(20, 20, 24, 0.85);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    top: 24px; right: 24px;
     padding: 6px 14px;
     border-radius: 999px;
-    font-size: 12px;
-    color: #9aa0a6;
-    opacity: 0;
-    transition: opacity 0.3s;
-    pointer-events: none;
-    z-index: 10;
-    border: 1px solid rgba(255,255,255,0.08);
+    font-size: 12px; color: var(--text-muted);
   }
-  #presenter:hover #pageIndicator { opacity: 1; }
 
-  /* 操作ヒント（最初の数秒だけ表示）*/
   #hint {
-    position: absolute;
-    bottom: 24px;
-    left: 50%;
+    bottom: 24px; left: 50%;
     transform: translateX(-50%);
-    font-size: 12px;
-    color: #555;
-    opacity: 0;
-    transition: opacity 0.4s;
-    pointer-events: none;
-    z-index: 10;
+    font-size: 12px; color: var(--text-dim);
   }
-  #presenter:hover #hint { opacity: 1; }
 </style>
 </head>
 <body>
@@ -244,249 +206,257 @@
 
 <!-- ===== プレゼンテーションモード ===== -->
 <div id="presenter">
-  <!-- 左：全文ナビゲーター -->
-  <div id="navigator"></div>
+  <div id="navList"></div>
 
-  <!-- 右：メイン表示 -->
   <div id="mainDisplay">
     <div id="mainText"></div>
   </div>
 
-  <!-- ページ番号 -->
-  <div id="pageIndicator">1 / 1</div>
+  <div id="pageIndicator" class="fade glass">1 / 1</div>
 
-  <!-- 設定コントロール -->
-  <div id="controls">
+  <div id="controls" class="fade glass">
     <label for="fontSlider">文字サイズ</label>
     <input type="range" id="fontSlider" min="24" max="160" value="72" step="2">
     <span id="fontValue">72px</span>
     <button id="exitBtn">終了</button>
   </div>
 
-  <!-- 操作ヒント -->
-  <div id="hint">左クリック: 次へ ／ 右クリック: 前へ</div>
+  <div id="hint" class="fade">左クリック: 次へ ／ 右クリック: 前へ</div>
 </div>
 
 <script>
-  // ===== 要素参照 =====
-  const editor = document.getElementById('editor');
-  const presenter = document.getElementById('presenter');
-  const scriptInput = document.getElementById('scriptInput');
-  const startBtn = document.getElementById('startBtn');
-  const navigator_ = document.getElementById('navigator');
-  const mainText = document.getElementById('mainText');
-  const fontSlider = document.getElementById('fontSlider');
-  const fontValue = document.getElementById('fontValue');
-  const exitBtn = document.getElementById('exitBtn');
-  const pageIndicator = document.getElementById('pageIndicator');
+(() => {
+  'use strict';
+
+  // ===== 定数 =====
+  const STORAGE_KEY      = 'vlog-prompter-script';
+  const DEFAULT_FONT_PX  = 72;
+  const MIN_FONT_PX      = 12;
+  const FIT_STEP_PX      = 2;
+  const SAMPLE_SCRIPT =
+    'こんにちは、今日のV-Logへようこそ。\n今日は新しいカメラで撮影しています。\n\n' +
+    '最初に紹介したいのは、このプロンプターアプリです。\n空行でページが切り替わります。\n\n' +
+    '左クリックで次のページ、右クリックで前のページに戻れます。\n撮影に集中できるシンプルな設計です。\n\n' +
+    '画面右下にマウスを移動すると、文字サイズを調整するスライダーが表示されます。\n\n' +
+    'それでは、素敵な撮影を！';
+
+  // ===== DOM 参照を一箇所に集約 =====
+  const $ = (id) => document.getElementById(id);
+  const dom = {
+    editor:        $('editor'),
+    scriptInput:   $('scriptInput'),
+    startBtn:      $('startBtn'),
+    presenter:     $('presenter'),
+    navList:       $('navList'),
+    mainDisplay:   $('mainDisplay'),
+    mainText:      $('mainText'),
+    pageIndicator: $('pageIndicator'),
+    controls:      $('controls'),
+    fontSlider:    $('fontSlider'),
+    fontValue:     $('fontValue'),
+    exitBtn:       $('exitBtn'),
+  };
 
   // ===== 状態 =====
-  let pages = [];        // ページ配列
-  let currentIndex = 0;  // 現在のページ番号
-  let userFontSize = 72; // ユーザーがスライダーで指定した文字サイズ（上限）
-  const controlsEl = document.getElementById('controls');
-  const mainDisplay = document.getElementById('mainDisplay');
+  const state = {
+    pages: [],
+    currentIndex: 0,
+    userFontPx: DEFAULT_FONT_PX, // スライダー値（自動縮小の上限）
+  };
 
-  // ===== 原稿の永続化（localStorage）=====
-  // Cookie は 4KB 制限があるため、長い原稿でも安全に保存できる localStorage を使用
-  const STORAGE_KEY = 'vlog-prompter-script';
-  function saveScript(text) {
-    try { localStorage.setItem(STORAGE_KEY, text); } catch (e) { /* 容量超過等は無視 */ }
-  }
-  function loadScript() {
-    try { return localStorage.getItem(STORAGE_KEY); } catch (e) { return null; }
-  }
+  // ===== ストレージ（localStorage を thin wrap） =====
+  const storage = {
+    save(text) {
+      try { localStorage.setItem(STORAGE_KEY, text); } catch (_) { /* noop */ }
+    },
+    load() {
+      try { return localStorage.getItem(STORAGE_KEY); } catch (_) { return null; }
+    },
+  };
 
   // ===== 原稿をページに分割（空行＝改行2回で区切る）=====
-  function splitIntoPages(text) {
-    // 改行コードを統一して、2回以上の連続改行で分割
-    return text
-      .replace(/\r\n/g, '\n')
-      .split(/\n\s*\n+/)
-      .map(s => s.trim())
-      .filter(s => s.length > 0);
-  }
+  const splitIntoPages = (text) =>
+    text.replace(/\r\n/g, '\n')
+        .split(/\n\s*\n+/)
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0);
 
-  // ===== ナビゲーター（左側全文）を構築 =====
+  // ===== ナビゲーター構築 =====
   function buildNavigator() {
-    navigator_.innerHTML = '';
-    pages.forEach((page, i) => {
+    const frag = document.createDocumentFragment();
+    state.pages.forEach((page, i) => {
       const div = document.createElement('div');
       div.className = 'nav-page';
       div.textContent = page;
       div.dataset.index = i;
-      // クリックで該当ページにジャンプ（親へのクリック伝播は止める）
       div.addEventListener('click', (e) => {
         e.stopPropagation();
         showPage(i);
       });
-      // 左ナビ上での右クリックメニューも抑制
       div.addEventListener('contextmenu', (e) => {
         e.preventDefault();
         e.stopPropagation();
       });
-      navigator_.appendChild(div);
+      frag.appendChild(div);
     });
+    dom.navList.replaceChildren(frag);
   }
 
-  // ===== オーバーフロー検知＆自動縮小 =====
-  // ユーザー指定サイズから始めて、はみ出している間だけ縮小する。
-  // 縮小が発生した場合は「自動調整モード」とし、スライダーを無効化する。
+  // ===== オーバーフロー判定 =====
+  const isOverflowing = () =>
+    dom.mainText.scrollHeight > dom.mainDisplay.clientHeight ||
+    dom.mainText.scrollWidth  > dom.mainDisplay.clientWidth;
+
+  // ===== オーバーフロー時のみ自動縮小（二分探索で最大サイズを探す）=====
+  // 上限はユーザーのスライダー値。下限は MIN_FONT_PX。
   function fitTextToDisplay() {
-    // まずユーザーの希望サイズに戻す
-    let size = userFontSize;
-    mainText.style.fontSize = size + 'px';
-
-    // 縦か横のいずれかがはみ出している場合に2pxずつ縮小
-    const MIN_SIZE = 12;
-    let shrunk = false;
-    // 強制的にレイアウト確定させるため scrollHeight / scrollWidth を参照
-    while (
-      (mainText.scrollHeight > mainDisplay.clientHeight ||
-       mainText.scrollWidth > mainDisplay.clientWidth) &&
-      size > MIN_SIZE
-    ) {
-      size -= 2;
-      mainText.style.fontSize = size + 'px';
-      shrunk = true;
+    dom.mainText.style.fontSize = state.userFontPx + 'px';
+    if (!isOverflowing()) {
+      applyAutoFitUI(false, state.userFontPx);
+      return;
     }
 
-    // UI 反映：自動調整中はスライダーを無効化
-    if (shrunk) {
-      controlsEl.classList.add('auto-fit');
-      fontSlider.disabled = true;
-      fontValue.textContent = size + 'px';
-    } else {
-      controlsEl.classList.remove('auto-fit');
-      fontSlider.disabled = false;
-      fontValue.textContent = userFontSize + 'px';
+    // 二分探索：[MIN_FONT_PX, userFontPx] の範囲で「収まる最大サイズ」を求める
+    let lo = MIN_FONT_PX;
+    let hi = state.userFontPx;
+    let best = MIN_FONT_PX;
+    while (lo <= hi) {
+      const mid = Math.floor((lo + hi) / (2 * FIT_STEP_PX)) * FIT_STEP_PX;
+      const trial = Math.max(MIN_FONT_PX, mid);
+      dom.mainText.style.fontSize = trial + 'px';
+      if (!isOverflowing()) {
+        best = trial;
+        lo = trial + FIT_STEP_PX;
+      } else {
+        hi = trial - FIT_STEP_PX;
+      }
+      if (trial === MIN_FONT_PX && isOverflowing()) break;
     }
+    dom.mainText.style.fontSize = best + 'px';
+    applyAutoFitUI(true, best);
   }
 
-  // ===== 現在のページを表示し、ハイライト＆中央スクロールさせる =====
+  // 自動縮小モードの UI 反映
+  function applyAutoFitUI(active, displayPx) {
+    dom.controls.classList.toggle('auto-fit', active);
+    dom.fontSlider.disabled = active;
+    dom.fontValue.textContent = displayPx + 'px';
+  }
+
+  // ===== ページ表示 =====
   function showPage(index) {
-    if (pages.length === 0) return;
-    // 範囲をクランプ
-    currentIndex = Math.max(0, Math.min(index, pages.length - 1));
+    if (state.pages.length === 0) return;
+    state.currentIndex = Math.max(0, Math.min(index, state.pages.length - 1));
 
-    // 右側メイン表示
-    mainText.textContent = pages[currentIndex];
-    // テキスト更新後にはみ出しチェック
+    dom.mainText.textContent = state.pages[state.currentIndex];
     fitTextToDisplay();
+    dom.pageIndicator.textContent = `${state.currentIndex + 1} / ${state.pages.length}`;
 
-    // ページ番号表示
-    pageIndicator.textContent = `${currentIndex + 1} / ${pages.length}`;
-
-    // 左側ハイライト更新
-    const items = navigator_.querySelectorAll('.nav-page');
-    items.forEach((el, i) => {
-      el.classList.toggle('current', i === currentIndex);
-    });
-
-    // ハイライト箇所が画面中央に来るよう自動スクロール
-    const currentEl = items[currentIndex];
-    if (currentEl) {
-      const navRect = navigator_.getBoundingClientRect();
-      const elRect = currentEl.getBoundingClientRect();
-      // 要素の中央位置 − ナビゲーター中央位置 をスクロール量に
-      const offset = (elRect.top + elRect.height / 2) - (navRect.top + navRect.height / 2);
-      navigator_.scrollTo({
-        top: navigator_.scrollTop + offset,
-        behavior: 'smooth'
-      });
-    }
+    updateNavHighlight();
   }
 
-  // ===== プロンプター開始 =====
-  startBtn.addEventListener('click', () => {
-    const text = scriptInput.value;
-    pages = splitIntoPages(text);
+  // 左ナビのハイライト更新＋中央スクロール
+  function updateNavHighlight() {
+    const items = dom.navList.querySelectorAll('.nav-page');
+    items.forEach((el, i) => el.classList.toggle('current', i === state.currentIndex));
+
+    const currentEl = items[state.currentIndex];
+    if (!currentEl) return;
+    const navRect = dom.navList.getBoundingClientRect();
+    const elRect  = currentEl.getBoundingClientRect();
+    const offset  = (elRect.top + elRect.height / 2) - (navRect.top + navRect.height / 2);
+    dom.navList.scrollTo({ top: dom.navList.scrollTop + offset, behavior: 'smooth' });
+  }
+
+  // ===== モード切替 =====
+  function enterPresentation() {
+    const text = dom.scriptInput.value;
+    const pages = splitIntoPages(text);
     if (pages.length === 0) {
       alert('原稿が空です。テキストを入力してください。');
       return;
     }
-    saveScript(text); // 開始時にも保存
-    currentIndex = 0;
+    storage.save(text);
+    state.pages = pages;
+    state.currentIndex = 0;
     buildNavigator();
-    editor.style.display = 'none';
-    presenter.classList.add('active');
+    dom.editor.style.display = 'none';
+    dom.presenter.classList.add('active');
     showPage(0);
-  });
-
-  // テキストエリアの入力を都度保存（リロードしても消えない）
-  scriptInput.addEventListener('input', () => {
-    saveScript(scriptInput.value);
-  });
-
-  // ===== 終了ボタン =====
-  exitBtn.addEventListener('click', (e) => {
-    e.stopPropagation(); // クリックがページ送りに伝播しないように
-    presenter.classList.remove('active');
-    editor.style.display = 'flex';
-  });
-
-  // ===== マウス操作：左クリックで次へ =====
-  presenter.addEventListener('click', (e) => {
-    // コントロール領域のクリックはページ送りしない
-    if (e.target.closest('#controls') || e.target.closest('#pageIndicator')) return;
-    showPage(currentIndex + 1);
-  });
-
-  // ===== 右クリックで前へ（コンテキストメニュー抑制）=====
-  presenter.addEventListener('contextmenu', (e) => {
-    e.preventDefault();
-    if (e.target.closest('#controls')) return;
-    showPage(currentIndex - 1);
-  });
-
-  // エディタ側でも右クリックメニューを使うかもしれないので、プレゼンター側のみ抑制
-
-  // ===== フォントサイズスライダー =====
-  // ユーザー希望サイズを更新し、はみ出しチェックを再実行する。
-  fontSlider.addEventListener('input', () => {
-    userFontSize = parseInt(fontSlider.value, 10);
-    fitTextToDisplay();
-  });
-
-  // ===== ウィンドウリサイズ時にも再フィット =====
-  window.addEventListener('resize', () => {
-    if (presenter.classList.contains('active')) fitTextToDisplay();
-  });
-
-  // スライダー操作中にクリックでページ送りされないように
-  ['mousedown', 'click'].forEach(ev => {
-    fontSlider.addEventListener(ev, e => e.stopPropagation());
-  });
-
-  // ===== キーボードショートカット（補助）=====
-  document.addEventListener('keydown', (e) => {
-    if (!presenter.classList.contains('active')) return;
-    if (e.key === 'ArrowDown' || e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
-      // 下キー／右キー／スペース／PageDown で次のページへ
-      e.preventDefault();
-      showPage(currentIndex + 1);
-    } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft' || e.key === 'PageUp') {
-      // 上キー／左キー／PageUp で前のページへ
-      e.preventDefault();
-      showPage(currentIndex - 1);
-    } else if (e.key === 'Escape') {
-      presenter.classList.remove('active');
-      editor.style.display = 'flex';
-    }
-  });
-
-  // ===== 初期表示：保存済み原稿があれば復元、なければサンプル原稿 =====
-  const saved = loadScript();
-  if (saved !== null && saved.length > 0) {
-    scriptInput.value = saved;
-  } else {
-    scriptInput.value =
-      'こんにちは、今日のV-Logへようこそ。\n今日は新しいカメラで撮影しています。\n\n' +
-      '最初に紹介したいのは、このプロンプターアプリです。\n空行でページが切り替わります。\n\n' +
-      '左クリックで次のページ、右クリックで前のページに戻れます。\n撮影に集中できるシンプルな設計です。\n\n' +
-      '画面右下にマウスを移動すると、文字サイズを調整するスライダーが表示されます。\n\n' +
-      'それでは、素敵な撮影を！';
   }
+
+  function exitPresentation() {
+    dom.presenter.classList.remove('active');
+    dom.editor.style.display = 'flex';
+  }
+
+  // ===== ナビゲーション操作（クランプは showPage 側で）=====
+  const goNext = () => showPage(state.currentIndex + 1);
+  const goPrev = () => showPage(state.currentIndex - 1);
+
+  // ===== イベントバインド =====
+  function bindEvents() {
+    dom.startBtn.addEventListener('click', enterPresentation);
+    dom.exitBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      exitPresentation();
+    });
+
+    // 原稿入力を都度保存
+    dom.scriptInput.addEventListener('input', () => storage.save(dom.scriptInput.value));
+
+    // プレゼン領域：左クリック=次／右クリック=前。コントロール上は無視。
+    const isInControls = (target) =>
+      target.closest('#controls') || target.closest('#pageIndicator');
+
+    dom.presenter.addEventListener('click', (e) => {
+      if (isInControls(e.target)) return;
+      goNext();
+    });
+    dom.presenter.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      if (isInControls(e.target)) return;
+      goPrev();
+    });
+
+    // フォントサイズスライダー
+    dom.fontSlider.addEventListener('input', () => {
+      state.userFontPx = parseInt(dom.fontSlider.value, 10);
+      fitTextToDisplay();
+    });
+    // スライダー操作中のクリックでページ送りされないように
+    ['mousedown', 'click'].forEach((ev) =>
+      dom.fontSlider.addEventListener(ev, (e) => e.stopPropagation())
+    );
+
+    // リサイズで再フィット
+    window.addEventListener('resize', () => {
+      if (dom.presenter.classList.contains('active')) fitTextToDisplay();
+    });
+
+    // キーボードショートカット
+    document.addEventListener('keydown', (e) => {
+      if (!dom.presenter.classList.contains('active')) return;
+      switch (e.key) {
+        case 'ArrowDown': case 'ArrowRight': case ' ': case 'PageDown':
+          e.preventDefault(); goNext(); break;
+        case 'ArrowUp': case 'ArrowLeft': case 'PageUp':
+          e.preventDefault(); goPrev(); break;
+        case 'Escape':
+          exitPresentation(); break;
+      }
+    });
+  }
+
+  // ===== 初期化 =====
+  function init() {
+    const saved = storage.load();
+    dom.scriptInput.value = (saved && saved.length > 0) ? saved : SAMPLE_SCRIPT;
+    bindEvents();
+  }
+
+  init();
+})();
 </script>
 </body>
 </html>
