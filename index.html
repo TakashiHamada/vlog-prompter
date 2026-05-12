@@ -93,6 +93,10 @@
     border-right: 1px solid var(--border-stage);
     scroll-behavior: smooth;
   }
+  /* OS の「動きを減らす」設定を尊重して滑らかスクロールを無効化 */
+  @media (prefers-reduced-motion: reduce) {
+    #navList { scroll-behavior: auto; }
+  }
   #navList::-webkit-scrollbar { width: 6px; }
   #navList::-webkit-scrollbar-track { background: transparent; }
   #navList::-webkit-scrollbar-thumb { background: #222; border-radius: 3px; }
@@ -276,14 +280,35 @@
   };
 
   // ===== ストレージ（localStorage を thin wrap） =====
+  // 毎キーストロークの同期書き込みはジャンクの原因になるため、入力経由の保存は
+  // debounce する。即時保存が必要な箇所（開始時・離脱時）は saveNow を使う。
+  const SAVE_DEBOUNCE_MS = 400;
   const storage = {
-    save(text) {
+    saveNow(text) {
       try { localStorage.setItem(STORAGE_KEY, text); } catch (_) { /* noop */ }
     },
     load() {
       try { return localStorage.getItem(STORAGE_KEY); } catch (_) { return null; }
     },
   };
+  let saveTimer = null;
+  function scheduleSave(text) {
+    if (saveTimer) clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => {
+      saveTimer = null;
+      storage.saveNow(text);
+    }, SAVE_DEBOUNCE_MS);
+  }
+  function flushPendingSave() {
+    if (!saveTimer) return;
+    clearTimeout(saveTimer);
+    saveTimer = null;
+    storage.saveNow(dom.scriptInput.value);
+  }
+
+  // ===== モーション設定（OS の prefers-reduced-motion を尊重）=====
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const scrollBehavior = () => (reduceMotion.matches ? 'auto' : 'smooth');
 
   // ===== 原稿をページに分割（空行＝改行2回で区切る）=====
   const splitIntoPages = (text) =>
@@ -398,7 +423,7 @@
     const navRect = dom.navList.getBoundingClientRect();
     const elRect  = currentEl.getBoundingClientRect();
     const offset  = (elRect.top + elRect.height / 2) - (navRect.top + navRect.height / 2);
-    dom.navList.scrollTo({ top: dom.navList.scrollTop + offset, behavior: 'smooth' });
+    dom.navList.scrollTo({ top: dom.navList.scrollTop + offset, behavior: scrollBehavior() });
   }
 
   // ===== モード切替 =====
@@ -409,7 +434,7 @@
       alert('原稿が空です。テキストを入力してください。');
       return;
     }
-    storage.save(text);
+    storage.saveNow(text);
     state.pages = pages;
     state.currentIndex = 0;
     buildNavigator();
@@ -435,8 +460,13 @@
       exitPresentation();
     });
 
-    // 原稿入力を都度保存
-    dom.scriptInput.addEventListener('input', () => storage.save(dom.scriptInput.value));
+    // 原稿入力は debounce 経由で保存し、blur/離脱時に確実にフラッシュする
+    dom.scriptInput.addEventListener('input', () => scheduleSave(dom.scriptInput.value));
+    dom.scriptInput.addEventListener('blur', flushPendingSave);
+    window.addEventListener('beforeunload', flushPendingSave);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') flushPendingSave();
+    });
 
     // プレゼン領域：左クリック=次／右クリック=前。
     // コントロール類とナビゲーター領域（スクロールバーや余白を含む）は対象外。
