@@ -138,8 +138,10 @@
     transition: opacity 0.3s;
     z-index: 10;
   }
-  #presenter:hover .fade { opacity: 1; }
-  #presenter:hover #controls { pointer-events: auto; }
+  #presenter:hover .fade,
+  #presenter:focus-within .fade { opacity: 1; }
+  #presenter:hover #controls,
+  #presenter:focus-within #controls { pointer-events: auto; }
   .glass {
     background: var(--glass-bg);
     backdrop-filter: blur(10px);
@@ -231,7 +233,7 @@
   // ===== 定数 =====
   const STORAGE_KEY      = 'vlog-prompter-script';
   const DEFAULT_FONT_PX  = 72;
-  const MIN_FONT_PX      = 12;
+  const MIN_FONT_PX      = 24; // スライダー下限と一致させる
   const FIT_STEP_PX      = 2;
   const SAMPLE_SCRIPT =
     'こんにちは、今日のV-Logへようこそ。\n今日は新しいカメラで撮影しています。\n\n' +
@@ -435,15 +437,22 @@
     });
 
     // キーボードショートカット
+    // フォーカスがフォーム部品（スライダー・ボタン等）にある場合は、
+    // 矢印キーやスペースをそちらの操作として扱わせるためショートカットを抑止する。
+    const isFormControl = (el) =>
+      el && (el.tagName === 'INPUT' || el.tagName === 'BUTTON' ||
+             el.tagName === 'TEXTAREA' || el.tagName === 'SELECT');
+
     document.addEventListener('keydown', (e) => {
       if (!dom.presenter.classList.contains('active')) return;
+      // Esc は常に有効（撮影中の即時離脱用）
+      if (e.key === 'Escape') { exitPresentation(); return; }
+      if (isFormControl(e.target)) return;
       switch (e.key) {
         case 'ArrowDown': case 'ArrowRight': case ' ': case 'PageDown':
           e.preventDefault(); goNext(); break;
         case 'ArrowUp': case 'ArrowLeft': case 'PageUp':
           e.preventDefault(); goPrev(); break;
-        case 'Escape':
-          exitPresentation(); break;
       }
     });
   }
