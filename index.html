@@ -275,6 +275,16 @@
   let pages = [];        // ページ配列
   let currentIndex = 0;  // 現在のページ番号
 
+  // ===== 原稿の永続化（localStorage）=====
+  // Cookie は 4KB 制限があるため、長い原稿でも安全に保存できる localStorage を使用
+  const STORAGE_KEY = 'vlog-prompter-script';
+  function saveScript(text) {
+    try { localStorage.setItem(STORAGE_KEY, text); } catch (e) { /* 容量超過等は無視 */ }
+  }
+  function loadScript() {
+    try { return localStorage.getItem(STORAGE_KEY); } catch (e) { return null; }
+  }
+
   // ===== 原稿をページに分割（空行＝改行2回で区切る）=====
   function splitIntoPages(text) {
     // 改行コードを統一して、2回以上の連続改行で分割
@@ -347,11 +357,17 @@
       alert('原稿が空です。テキストを入力してください。');
       return;
     }
+    saveScript(text); // 開始時にも保存
     currentIndex = 0;
     buildNavigator();
     editor.style.display = 'none';
     presenter.classList.add('active');
     showPage(0);
+  });
+
+  // テキストエリアの入力を都度保存（リロードしても消えない）
+  scriptInput.addEventListener('input', () => {
+    saveScript(scriptInput.value);
   });
 
   // ===== 終了ボタン =====
@@ -406,13 +422,18 @@
     }
   });
 
-  // ===== サンプル原稿（初回ヒント用）=====
-  scriptInput.value =
-    'こんにちは、今日のV-Logへようこそ。\n今日は新しいカメラで撮影しています。\n\n' +
-    '最初に紹介したいのは、このプロンプターアプリです。\n空行でページが切り替わります。\n\n' +
-    '左クリックで次のページ、右クリックで前のページに戻れます。\n撮影に集中できるシンプルな設計です。\n\n' +
-    '画面右下にマウスを移動すると、文字サイズを調整するスライダーが表示されます。\n\n' +
-    'それでは、素敵な撮影を！';
+  // ===== 初期表示：保存済み原稿があれば復元、なければサンプル原稿 =====
+  const saved = loadScript();
+  if (saved !== null && saved.length > 0) {
+    scriptInput.value = saved;
+  } else {
+    scriptInput.value =
+      'こんにちは、今日のV-Logへようこそ。\n今日は新しいカメラで撮影しています。\n\n' +
+      '最初に紹介したいのは、このプロンプターアプリです。\n空行でページが切り替わります。\n\n' +
+      '左クリックで次のページ、右クリックで前のページに戻れます。\n撮影に集中できるシンプルな設計です。\n\n' +
+      '画面右下にマウスを移動すると、文字サイズを調整するスライダーが表示されます。\n\n' +
+      'それでは、素敵な撮影を！';
+  }
 </script>
 </body>
 </html>
