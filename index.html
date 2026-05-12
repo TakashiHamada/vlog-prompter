@@ -155,6 +155,12 @@
   #presenter:focus-within #controls,
   #presenter:hover #pageIndicator,
   #presenter:focus-within #pageIndicator { pointer-events: auto; }
+
+  /* タッチデバイス（hover 不可）では、タップでオーバーレイを呼び出せないため
+     常時表示にして Exit / スライダーへアクセスできるようにする。 */
+  @media (hover: none) {
+    .fade { opacity: 1; pointer-events: auto; }
+  }
   .glass {
     background: var(--glass-bg);
     backdrop-filter: blur(10px);
@@ -502,8 +508,9 @@
     });
 
     // キーボードショートカット
-    // フォーカスがフォーム部品（スライダー・ボタン等）にある場合は、
-    // 矢印キーやスペースをそちらの操作として扱わせるためショートカットを抑止する。
+    // フォーカスがフォーム部品（スライダー・ボタン等）にある場合や、
+    // 左ナビ内（.nav-page 等）にある場合は、矢印/Space などの本来の操作を
+    // 妨げないようショートカットを抑止する。
     const isFormControl = (el) =>
       el && (el.tagName === 'INPUT' || el.tagName === 'BUTTON' ||
              el.tagName === 'TEXTAREA' || el.tagName === 'SELECT');
@@ -512,7 +519,7 @@
       if (!dom.presenter.classList.contains('active')) return;
       // Esc は常に有効（撮影中の即時離脱用）
       if (e.key === 'Escape') { exitPresentation(); return; }
-      if (isFormControl(e.target)) return;
+      if (isFormControl(e.target) || e.target.closest('#navList')) return;
       switch (e.key) {
         case 'ArrowDown': case 'ArrowRight': case ' ': case 'PageDown':
           e.preventDefault(); goNext(); break;
