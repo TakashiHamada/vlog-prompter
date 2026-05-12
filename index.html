@@ -305,9 +305,13 @@
   }
 
   // ===== オーバーフロー判定 =====
+  // #mainDisplay には padding があり clientHeight/Width はパディングを含むため、
+  // クリッピングを正しく検知できる mainText 自身の clientHeight/Width を基準にする。
+  // mainText は width:100% / max-height:100% / overflow:hidden なので、
+  // scrollHeight/Width が clientHeight/Width を超えると実際に切れている。
   const isOverflowing = () =>
-    dom.mainText.scrollHeight > dom.mainDisplay.clientHeight ||
-    dom.mainText.scrollWidth  > dom.mainDisplay.clientWidth;
+    dom.mainText.scrollHeight > dom.mainText.clientHeight ||
+    dom.mainText.scrollWidth  > dom.mainText.clientWidth;
 
   // ===== オーバーフロー時のみ自動縮小（二分探索で最大サイズを探す）=====
   // 上限はユーザーのスライダー値。下限は MIN_FONT_PX。
@@ -407,17 +411,21 @@
     // 原稿入力を都度保存
     dom.scriptInput.addEventListener('input', () => storage.save(dom.scriptInput.value));
 
-    // プレゼン領域：左クリック=次／右クリック=前。コントロール上は無視。
-    const isInControls = (target) =>
-      target.closest('#controls') || target.closest('#pageIndicator');
+    // プレゼン領域：左クリック=次／右クリック=前。
+    // コントロール類とナビゲーター領域（スクロールバーや余白を含む）は対象外。
+    // ナビゲーター内の .nav-page クリックはそれぞれの handler で stopPropagation 済み。
+    const isNavOrControls = (target) =>
+      target.closest('#controls') ||
+      target.closest('#pageIndicator') ||
+      target.closest('#navList');
 
     dom.presenter.addEventListener('click', (e) => {
-      if (isInControls(e.target)) return;
+      if (isNavOrControls(e.target)) return;
       goNext();
     });
     dom.presenter.addEventListener('contextmenu', (e) => {
       e.preventDefault();
-      if (isInControls(e.target)) return;
+      if (isNavOrControls(e.target)) return;
       goPrev();
     });
 
